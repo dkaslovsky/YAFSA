@@ -3,6 +3,7 @@ Class for scraping tables from HTML using BeautifulSoup
 """
 
 import os
+import ujson as json
 from contextlib import closing
 from bs4 import BeautifulSoup
 from urllib2 import urlopen, URLError
@@ -72,21 +73,12 @@ class TableScraper(object):
 			records = {}
 		return records
 
-	def write_to_file(self, records):
-		raise NotImplementedError('Writing records to file is not implemented yet')
-
-
-def write_table_to_csv(df, outdir, outfile):
-	"""
-	Write a dataframe (table) to file in csv format
-	:param df:
-	:param outdir:
-	:param outfile:
-	:return:
-	"""
-	if not os.path.exists(outdir):
-		os.makedirs(outdir)
-	outfile = '%s.%s' % (os.path.splitext(outfile)[0], 'csv')  	# ensure file has extension
-	full_file_name = os.path.join(outdir, outfile)
-	_ = df.to_csv(full_file_name)
-	return full_file_name
+	def write_to_file(self, records, outdir, outfile):
+		#raise NotImplementedError('Writing records to file is not implemented yet')
+		if not os.path.exists(outdir):
+			os.makedirs(outdir)
+		outfile = '%s.%s' % (os.path.splitext(outfile)[0], 'json')  # ensure file has extension
+		full_file_name = os.path.join(outdir, outfile)
+		with open(full_file_name, 'w') as f:
+			f.write(json.dumps(records))
+		return full_file_name

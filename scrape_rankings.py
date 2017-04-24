@@ -2,17 +2,13 @@
 
 import os
 import time
-import pandas as pd
-from yafsa.scrape import TableScraper, write_table_to_csv
-
-
-# TODO: eliminate use of pandas once ts.write_to_file is implemented, resave data in record format
+from yafsa.scrape import TableScraper
 
 
 # URL specification
 URL_BASE = 'http://partners.fantasypros.com/external/widget/nfl-staff-rankings.php?'
 SCORING = 'STD'
-YEAR = 2016
+YEAR = '2016'
 URL = '&'.join([
 	URL_BASE,
 	'%s=%s' % ('year', YEAR),
@@ -54,8 +50,8 @@ if __name__ == '__main__':
 				time.sleep(1)
 
 				# write file
-				df = pd.DataFrame(data)
-				file_name = '%s_%s' % (YEAR, args)
-				full_file_name = write_table_to_csv(df, OUTDIR, file_name)
+				file_name = '_'.join([YEAR, wk, pos, src])
+				full_file_name = ts.write_to_file(data, OUTDIR, file_name)
 				file_count += 1
 				print 'Wrote file %i: %s' % (file_count, full_file_name)
+
