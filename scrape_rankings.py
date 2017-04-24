@@ -54,4 +54,3 @@ if __name__ == '__main__':
 				full_file_name = ts.write_to_file(data, OUTDIR, file_name)
 				file_count += 1
 				print 'Wrote file %i: %s' % (file_count, full_file_name)
-

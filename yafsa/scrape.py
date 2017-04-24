@@ -73,8 +73,7 @@ class TableScraper(object):
 			records = {}
 		return records
 
-	def write_to_file(self, records, outdir, outfile):
-		#raise NotImplementedError('Writing records to file is not implemented yet')
+	def write_to_file(self, records, outdir, outfile)
 		if not os.path.exists(outdir):
 			os.makedirs(outdir)
 		outfile = '%s.%s' % (os.path.splitext(outfile)[0], 'json')  # ensure file has extension
