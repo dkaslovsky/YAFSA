@@ -1,4 +1,4 @@
-""" ranking metrics """
+""" Ranking metrics """
 
 import numpy as np
 

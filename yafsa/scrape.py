@@ -1,6 +1,4 @@
-"""
-Class for scraping tables from HTML using BeautifulSoup
-"""
+""" Class for scraping tables from HTML using BeautifulSoup """
 
 import os
 import ujson as json
