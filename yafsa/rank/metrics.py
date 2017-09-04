@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def dcg(relevance_scores, k=None, numerator='rel', normalized=True):
+def dcg(relevance_scores, k=None, numerator='rel', normalized=False):
 	"""
 	Discounted cumulative gain (see https://en.wikipedia.org/wiki/Discounted_cumulative_gain)
 	:param relevance_scores: list or array of relevance/importance scores, ordered as returned by ranker being evaluated
