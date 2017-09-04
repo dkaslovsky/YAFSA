@@ -1,6 +1,4 @@
-"""
-
-"""
+""" """
 
 import os
 import numpy as np
@@ -23,8 +21,7 @@ FILE_PARAMS = {
 STATS_FILE = '%s_week=%s_pos=%s.json' % (FILE_PARAMS['year'], FILE_PARAMS['week'], FILE_PARAMS['pos'])
 RANK_FILE = '%s_week=%s_position=%s_source=1.json' % (FILE_PARAMS['year'], FILE_PARAMS['week'], FILE_PARAMS['pos'])
 
-# TODO: how to choose k?  move into class so k is part of state?
-METRIC = lambda x: dcg(x, k=30, numerator='rel', normalized=False)
+
 
 
 # TODO: check for divide by zero
@@ -64,23 +61,48 @@ class Ranker(object):
 
 
 def normalize_player_names(namestr):
+	"""
+	Strips off all extra information from player names (e.g., opponent, date) and standardizes names (removes Jr., etc)
+	:param namestr:
+	:return:
+	"""
 	return ' '.join(namestr.strip().split(' ')[:2]).strip(',.')
+
+
+def clean_data(df, player_col, index_name='Player', select_cols=None, drop_cols=None, fill=None):
+
+	if select_cols:
+		select_cols = select_cols if isinstance(select_cols, list) else [select_cols]
+		df = df.select(lambda x: x in select_cols + [player_col], axis=1)
+	if drop_cols:
+		df = df.drop(drop_cols, axis=1)
+	if fill is not None:
+		df = df.replace(fill, np.nan)
+
+	df[player_col] = df[player_col].apply(normalize_player_names)
+
+	df = (df.rename(columns={player_col: index_name})
+			.set_index(index_name))
+
+	return df
+
+
 
 
 if __name__ == '__main__':
 
-	# TODO: handle dropping columns in more generic manner
-
+	# ETL
 	stats = (pd.read_json(os.path.join(BASE_DIR, STATS_PATH, STATS_FILE))
-	            .pipe(lambda x: x[['FPTS', 'PLAYER']])
-				.set_index('PLAYER'))
-	stats.index = stats.index.map(normalize_player_names)
+			   .pipe(clean_data, player_col='PLAYER', select_cols='FPTS'))
 
 	ranks = (pd.read_json(os.path.join(BASE_DIR, RANK_PATH, RANK_FILE))
-			   .drop(['Rank', 'StaffComposite9/11'], axis=1)
-			   .set_index('Player (matchup)')
-	           .replace('', np.nan))
-	ranks.index = ranks.index.map(normalize_player_names)
+			   .pipe(clean_data, player_col='Player (matchup)', drop_cols='Rank', fill=''))
+
+
+	
+	# TODO: how to choose k?  move into class so k is part of state?
+	METRIC = lambda x: dcg(x, k=30, numerator='rel', normalized=False)
+
 
 	ranker = Ranker(METRIC, normalize=True)
 	ranker = ranker.fit(stats)
