@@ -21,7 +21,7 @@ HEADER_ROWS_TO_SKIP = 1  # skip this many leading rows of each table (URL specif
 CHUNK_SIZE = None  # read each table in this many chunks
 
 # directory for writing data
-OUTDIR = os.path.join(os.path.abspath(os.path.curdir), 'data', 'stats')
+OUTDIR = os.path.join(os.path.dirname(__file__), 'data', 'stats')
 
 
 if __name__ == '__main__':

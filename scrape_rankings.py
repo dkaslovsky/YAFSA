@@ -24,8 +24,8 @@ SOURCES = range(1, 5)
 HEADER_ROWS_TO_SKIP = 0  # skip this many leading rows of each table (URL specific)
 CHUNK_SIZE = None  # read each table in this many chunks
 
-# Directory to write results
-OUTDIR = os.path.join(os.path.abspath(os.path.curdir), 'data', 'rankings')  # directory for writing data
+# directory for writing data
+OUTDIR = os.path.join(os.path.dirname(__file__), 'data', 'rankings')
 
 
 if __name__ == '__main__':

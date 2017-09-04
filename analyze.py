@@ -8,6 +8,13 @@ from yafsa.clean import clean_data
 from yafsa.rank import Ranker, dcg
 
 
+#### NOTE: WORK IN PROGRESS ###
+
+
+BASE_DIR = os.path.dirname(__file__)
+STATS_PATH = os.path.join('data', 'stats')
+RANK_PATH = os.path.join('data', 'rankings')
+
 # for now we'll just hard code the file parameters for development
 FILE_PARAMS = {
 	'year': '2016',
@@ -16,11 +23,6 @@ FILE_PARAMS = {
 	'source': '1'
 }
 
-BASE_DIR = os.path.dirname(__file__)
-STATS_PATH = 'data/stats'
-RANK_PATH = 'data/rankings'
-
-# TODO: standardize position/pos
 STATS_FILE = '%s_week=%s_pos=%s.json' \
              % (FILE_PARAMS['year'], FILE_PARAMS['week'], FILE_PARAMS['pos'])
 RANK_FILE = '%s_week=%s_position=%s_source=%s.json' \
