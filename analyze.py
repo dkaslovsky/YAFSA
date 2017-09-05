@@ -55,5 +55,5 @@ if __name__ == '__main__':
 			scores = ranker.score(ranks)
 			dfs.append(scores)
 
-		# TODO: this doesn't work because we need to dedupe columns
+		# TODO: this doesn't work because we need to dedupe columns after removing date
 		position_dfs[position] = pd.concat(dfs, axis=1)
