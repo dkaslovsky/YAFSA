@@ -24,8 +24,13 @@ class TableScraper(object):
 		return row.find_all('td')
 
 	def _get_header_labels(self, header_row):
+		"""
+		Parse out column labels from header
+		:param header_row:
+		:return:
+		"""
 		if self.replace_span_tag:
-			# TODO: there is likely a more efficient find/replace than the follow line
+			# there is likely a more efficient way to find/replace
 			header_soup = BeautifulSoup(str(header_row).replace('</span>', '</th>'), 'html.parser')
 		else:
 			header_soup = header_row

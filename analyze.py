@@ -15,33 +15,45 @@ BASE_DIR = os.path.dirname(__file__)
 STATS_PATH = os.path.join('data', 'stats')
 RANK_PATH = os.path.join('data', 'rankings')
 
-# for now we'll just hard code the file parameters for development
-FILE_PARAMS = {
-	'year': '2016',
-	'week': '1',
-	'pos': 'WR',
-	'source': '1'
-}
+# args to loop over
+YEAR = 2016
+POSITIONS = ['QB', 'RB', 'WR', 'TE']
+WEEKS = range(1, 18)
+SOURCES = range(1, 5)
 
-STATS_FILE = '%s_week=%s_pos=%s.json' \
-             % (FILE_PARAMS['year'], FILE_PARAMS['week'], FILE_PARAMS['pos'])
-RANK_FILE = '%s_week=%s_position=%s_source=%s.json' \
-            % (FILE_PARAMS['year'], FILE_PARAMS['week'], FILE_PARAMS['pos'], FILE_PARAMS['source'])
+# define ranking metric and ranker
+_dcg = partial(dcg, k=30, numerator='rel')
+ranker = Ranker(_dcg, normalize=True)
 
 
 if __name__ == '__main__':
 
-	# ETL
-	stats = (pd.read_json(os.path.join(BASE_DIR, STATS_PATH, STATS_FILE))
-			   .pipe(clean_data, player_col='PLAYER', select_cols='FPTS'))
+	position_dfs = {}
 
-	ranks = (pd.read_json(os.path.join(BASE_DIR, RANK_PATH, RANK_FILE))
-			   .pipe(clean_data, player_col='Player (matchup)', drop_cols='Rank', fill=''))
+	for position in POSITIONS:
 
-	_dcg = partial(dcg, k=30, numerator='rel')
+		dfs = []
 
-	ranker = Ranker(_dcg, normalize=True)
-	ranker = ranker.fit(stats)
+		for week in WEEKS:
 
-	scores = ranker.score(ranks)
-	print scores
+			# ETL stats
+			stats_file = '%s_week=%s_pos=%s.json' % (YEAR, week, position)
+			stats = (pd.read_json(os.path.join(BASE_DIR, STATS_PATH, stats_file))
+			           .pipe(clean_data, player_col='PLAYER', select_cols='FPTS'))
+
+			# ETL ranks
+			ranks_list = []
+			for source in SOURCES:
+				rank_file = '%s_week=%s_position=%s_source=%s.json' % (YEAR, week, position, source)
+				ranks = (pd.read_json(os.path.join(BASE_DIR, RANK_PATH, rank_file))
+				           .pipe(clean_data, player_col='Player (matchup)',
+				                 drop_cols=['Rank', 'FantasyProsAll Experts'], fill=''))
+				ranks_list.append(ranks)
+			ranks = pd.concat(ranks_list, axis=1)
+
+			ranker = ranker.fit(stats)
+			scores = ranker.score(ranks)
+			dfs.append(scores)
+
+		# TODO: this doesn't work because we need to dedupe columns
+		position_dfs[position] = pd.concat(dfs, axis=1)
