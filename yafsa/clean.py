@@ -31,7 +31,7 @@ def clean_data(df, player_col, index_name='Player', select_cols=None, drop_cols=
 		df = df.select(lambda x: x in select_cols + [player_col], axis=1)
 	if drop_cols:
 		drop_cols = drop_cols if isinstance(drop_cols, list) else [drop_cols]
-		# use select instead of drop to avoid requiring every element to be in df
+		# use select instead of drop here to avoid requiring every element to be in df
 		df = df.select(lambda x: x not in drop_cols, axis=1)
 	if fill is not None:
 		df = df.replace(fill, np.nan)
@@ -42,5 +42,8 @@ def clean_data(df, player_col, index_name='Player', select_cols=None, drop_cols=
 	df = (df.rename(columns={player_col: index_name})
 			.set_index(index_name)
 	        .rename(columns={col: re.split('\d+/\d+', col)[0] for col in df.columns}))
+
+	# deduplicate columns based on name
+	df = df.loc[:, ~df.columns.duplicated(keep='last')]
 
 	return df
