@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from urllib2 import urlopen, URLError
 
 
-# TODO: verify split_row is working
+# TODO: handle chunksize too small
 # TODO: move column_labels into state?
 # TODO: write to file each time through loop (in _parse_table and _parse_table_chunked)?
 # TODO: move write_to_file out of the class?
@@ -128,8 +128,6 @@ class TableScraper(object):
 			# read current chunk and extract rows
 			soup = BeautifulSoup(chunk, 'html.parser')
 			rows = soup.find_all('tr')
-			if not rows:
-				continue
 
 			# extract header information if it has not yet been parsed
 			# (should be when the current chunk is the first chunk)
@@ -144,7 +142,8 @@ class TableScraper(object):
 			# join the two parts of the split row and parse the joined row
 			if reconcile_split_row and split_row_part1:
 				(split_row_part2, _, _) = chunk.partition('</tr>')
-				joined_soup = BeautifulSoup('<tr>%s%s</tr>' % (split_row_part1, split_row_part2))
+				joined_soup = BeautifulSoup('<tr>%s%s</tr>' % (split_row_part1, split_row_part2),
+				                            'html.parser')
 				joined_row = joined_soup.find_all('tr')
 				joined_record = self._parse_rows(joined_row, column_labels)
 
@@ -154,7 +153,7 @@ class TableScraper(object):
 				records = joined_record + records
 
 			# check if last record is incomplete (split between two chunks)
-			reconcile_split_row = (len(self._get_columns(rows[-1])) < n_columns)
+			reconcile_split_row = (len(records[-1]) < n_columns)
 			# if yes, remove last (incomplete) record and save off the incomplete
 			# row data to be reconciled in the next iteration
 			if reconcile_split_row:
