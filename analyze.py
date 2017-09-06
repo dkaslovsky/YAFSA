@@ -39,14 +39,14 @@ if __name__ == '__main__':
 			# ETL stats
 			stats_file = '%s_week=%s_pos=%s.json' % (YEAR, week, position)
 			stats = (pd.read_json(os.path.join(BASE_DIR, STATS_PATH, stats_file))
-			           .pipe(clean_data, player_col='PLAYER', select_cols='FPTS'))
+			           .pipe(clean_data, player_col='PLAYER', index_name='Player', select_cols='FPTS'))
 
 			# ETL ranks
 			ranks_list = []
 			for source in SOURCES:
 				rank_file = '%s_week=%s_position=%s_source=%s.json' % (YEAR, week, position, source)
 				ranks = (pd.read_json(os.path.join(BASE_DIR, RANK_PATH, rank_file))
-				           .pipe(clean_data, player_col='Player (matchup)',
+				           .pipe(clean_data, player_col='Player (matchup)', index_name='Player',
 				                 drop_cols=['Rank', 'FantasyProsAll Experts'], fill=''))
 				ranks_list.append(ranks)
 			ranks = pd.concat(ranks_list, axis=1)

@@ -30,10 +30,10 @@ if __name__ == '__main__':
 
 	# ETL
 	stats = (pd.read_json(os.path.join(BASE_DIR, STATS_PATH, STATS_FILE))
-			   .pipe(clean_data, player_col='PLAYER', select_cols='FPTS'))
+			   .pipe(clean_data, player_col='PLAYER', index_name='Player', select_cols='FPTS'))
 
 	ranks = (pd.read_json(os.path.join(BASE_DIR, RANK_PATH, RANK_FILE))
-			   .pipe(clean_data, player_col='Player (matchup)', drop_cols='Rank', fill=''))
+			   .pipe(clean_data, player_col='Player (matchup)', index_name='Player', drop_cols='Rank', fill=''))
 
 	_dcg = partial(dcg, k=30, numerator='rel')
 
