@@ -7,6 +7,12 @@ from bs4 import BeautifulSoup
 from urllib2 import urlopen, URLError
 
 
+# TODO: verify split_row is working
+# TODO: move column_labels into state?
+# TODO: write to file each time through loop (in _parse_table and _parse_table_chunked)?
+# TODO: move write_to_file out of the class?
+
+
 class TableScraper(object):
 
 	def __init__(self, header_rows_to_skip=None, chunk_size=None, replace_span_tag=True):
@@ -31,7 +37,8 @@ class TableScraper(object):
 			table_parser = self._parse_table
 
 		try:
-			with closing(urlopen(url)) as urlhandle:  # urllib2 doesn't implement 'with' so need to use contextlib
+			# urllib2 doesn't implement 'with' so need to use contextlib
+			with closing(urlopen(url)) as urlhandle:
 				records = table_parser(urlhandle)
 		except (URLError, ValueError):
 			print 'Could not open url: %s' % url
@@ -92,10 +99,68 @@ class TableScraper(object):
 		if self.header_rows_to_skip:
 			rows = rows[self.header_rows_to_skip:]
 		header = rows.pop(0)
-		header_labels = self._get_header_labels(header)
-		records = self._parse_rows(rows, header_labels)
+		column_labels = self._get_header_labels(header)
+		records = self._parse_rows(rows, column_labels)
 		return records
 
 	def _parse_table_chunked(self, urlhandle):
-		raise NotImplementedError('Chunked reading is not implemented yet, initialize %s with chunk_size=None'
-		                          % self.__class__.__name__)
+		"""
+		Parse table into row records, reading from the url in chunks
+		:param urlhandle:
+		:return:
+		"""
+		all_records = []
+
+		# initially column labels have not been parsed
+		n_columns = 0
+		column_labels = None
+		# initially there is no split row to reconcile between chunks
+		reconcile_split_row = False
+		split_row_part1 = None
+		joined_record = None
+
+		while True:
+			# read chunk of data, break out of loop if no chunks remain
+			chunk = urlhandle.read(self.chunk_size)
+			if not chunk:
+				break
+
+			# read current chunk and extract rows
+			soup = BeautifulSoup(chunk, 'html.parser')
+			rows = soup.find_all('tr')
+			if not rows:
+				continue
+
+			# extract header information if it has not yet been parsed
+			# (should be when the current chunk is the first chunk)
+			if column_labels is None:
+				if self.header_rows_to_skip:
+					rows = rows[self.header_rows_to_skip:]
+				header = rows.pop(0)
+				column_labels = self._get_header_labels(header)
+				n_columns = len(column_labels)
+
+			# if previous chunk's last row extends into current chunk,
+			# join the two parts of the split row and parse the joined row
+			if reconcile_split_row and split_row_part1:
+				(split_row_part2, _, _) = chunk.partition('</tr>')
+				joined_soup = BeautifulSoup('<tr>%s%s</tr>' % (split_row_part1, split_row_part2))
+				joined_row = joined_soup.find_all('tr')
+				joined_record = self._parse_rows(joined_row, column_labels)
+
+			# parse rows and combine with reconciled row if necessary
+			records = self._parse_rows(rows, column_labels)
+			if reconcile_split_row and joined_record:
+				records = joined_record + records
+
+			# check if last record is incomplete (split between two chunks)
+			reconcile_split_row = (len(self._get_columns(rows[-1])) < n_columns)
+			# if yes, remove last (incomplete) record and save off the incomplete
+			# row data to be reconciled in the next iteration
+			if reconcile_split_row:
+				records.pop()
+				(_, _, split_row_part1) = chunk.rpartition('<tr>')
+
+			all_records.extend(records)
+
+		return all_records
