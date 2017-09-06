@@ -19,13 +19,46 @@ class TableScraper(object):
 		self.chunk_size = chunk_size
 		self.replace_span_tag = replace_span_tag
 
+	def scrape_table(self, url):
+		"""
+		Scrape table from url into list of records, one for each row
+		:param url: string
+		:return:
+		"""
+		if self.chunk_size and self.chunk_size > 0:
+			table_parser = self._parse_table_chunked
+		else:
+			table_parser = self._parse_table
+
+		try:
+			with closing(urlopen(url)) as urlhandle:  # urllib2 doesn't implement 'with' so need to use contextlib
+				records = table_parser(urlhandle)
+		except (URLError, ValueError):
+			print 'Could not open url: %s' % url
+			records = []
+		return records
+
+	def write_to_file(self, records, outdir, outfile):
+		if not os.path.exists(outdir):
+			os.makedirs(outdir)
+		outfile = '%s.%s' % (os.path.splitext(outfile)[0], 'json')  # ensure file has extension
+		full_file_name = os.path.join(outdir, outfile)
+		with open(full_file_name, 'w') as f:
+			f.write(json.dumps(records))
+		return full_file_name
+
 	@staticmethod
 	def _get_columns(row):
+		"""
+		Parse columns from a single row
+		:param row:
+		:return:
+		"""
 		return row.find_all('td')
 
 	def _get_header_labels(self, header_row):
 		"""
-		Parse out column labels from header
+		Parse column labels from header
 		:param header_row:
 		:return:
 		"""
@@ -47,6 +80,11 @@ class TableScraper(object):
 		return [{label: td.text.strip() for label, td in zip(labels, self._get_columns(row))} for row in rows]
 
 	def _parse_table(self, urlhandle):
+		"""
+		Parse table into row records
+		:param urlhandle:
+		:return:
+		"""
 		page = urlhandle.read()
 		soup = BeautifulSoup(page, 'html.parser')
 		table = soup.find('table')
@@ -61,26 +99,3 @@ class TableScraper(object):
 	def _parse_table_chunked(self, urlhandle):
 		raise NotImplementedError('Chunked reading is not implemented yet, initialize %s with chunk_size=None'
 		                          % self.__class__.__name__)
-
-	def scrape_table(self, url):
-		if self.chunk_size and self.chunk_size > 0:
-			table_parser = self._parse_table_chunked
-		else:
-			table_parser = self._parse_table
-
-		try:
-			with closing(urlopen(url)) as urlhandle:  # urllib2 doesn't implement 'with' so need to use contextlib
-				records = table_parser(urlhandle)
-		except (URLError, ValueError):
-			print 'Could not open url: %s' % url
-			records = {}
-		return records
-
-	def write_to_file(self, records, outdir, outfile):
-		if not os.path.exists(outdir):
-			os.makedirs(outdir)
-		outfile = '%s.%s' % (os.path.splitext(outfile)[0], 'json')  # ensure file has extension
-		full_file_name = os.path.join(outdir, outfile)
-		with open(full_file_name, 'w') as f:
-			f.write(json.dumps(records))
-		return full_file_name
