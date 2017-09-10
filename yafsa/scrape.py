@@ -7,22 +7,21 @@ from bs4 import BeautifulSoup
 from urllib2 import urlopen, URLError
 
 
-# TODO: handle chunksize too small
-# TODO: move column_labels into state?
-# TODO: write to file each time through loop (in _parse_table and _parse_table_chunked)?
-# TODO: move write_to_file out of the class?
+# TODO: move away from urllib2 to requests
+
+# TODO: write to file each time through loop (in _parse_table and _parse_table_chunked) or remove write_to_file?
 
 
 class TableScraper(object):
 
-	def __init__(self, header_rows_to_skip=None, chunk_size=None, replace_span_tag=True):
+	def __init__(self, header_rows_to_skip=0, chunk_size=None, replace_span_tag=True):
 		"""
 		:param header_rows_to_skip: number of leading rows of scraped table to skip
 		:param chunk_size: number of rows to read at a time
 		:param replace_span_tag: bool indicating whether to replace </span> with </th> for processing header labels
 		"""
-		self.header_rows_to_skip = header_rows_to_skip
-		self.chunk_size = chunk_size
+		self.header_rows_to_skip = int(header_rows_to_skip)
+		self.chunk_size = max(0, chunk_size)
 		self.replace_span_tag = replace_span_tag
 
 	def scrape_table(self, url):
@@ -31,7 +30,7 @@ class TableScraper(object):
 		:param url: string
 		:return:
 		"""
-		if self.chunk_size and self.chunk_size > 0:
+		if self.chunk_size > 0:
 			table_parser = self._parse_table_chunked
 		else:
 			table_parser = self._parse_table
@@ -42,6 +41,9 @@ class TableScraper(object):
 				records = table_parser(urlhandle)
 		except (URLError, ValueError):
 			print 'Could not open url: %s' % url
+			records = []
+		except IndexError as e:
+			print e.message
 			records = []
 		return records
 
@@ -77,6 +79,17 @@ class TableScraper(object):
 		header_labels = [h.text.strip() for h in header_soup.find_all('th')]
 		return header_labels
 
+	def _prepare_rows(self, rows):
+		"""
+		Remove leading rows and ensure rows is not empty
+		:param rows: list of rows (will be mutated)
+		:return:
+		"""
+		rows = rows[self.header_rows_to_skip:]
+		if not rows:
+			raise IndexError('No rows to process: try increasing chunk_size or reducing header_rows_to_skip')
+		return rows
+
 	def _parse_rows(self, rows, labels):
 		"""
 		Build list of dict records
@@ -96,8 +109,7 @@ class TableScraper(object):
 		soup = BeautifulSoup(page, 'html.parser')
 		table = soup.find('table')
 		rows = table.find_all('tr')
-		if self.header_rows_to_skip:
-			rows = rows[self.header_rows_to_skip:]
+		rows = self._prepare_rows(rows)
 		header = rows.pop(0)
 		column_labels = self._get_header_labels(header)
 		records = self._parse_rows(rows, column_labels)
@@ -132,8 +144,7 @@ class TableScraper(object):
 			# extract header information if it has not yet been parsed
 			# (should be when the current chunk is the first chunk)
 			if column_labels is None:
-				if self.header_rows_to_skip:
-					rows = rows[self.header_rows_to_skip:]
+				rows = self._prepare_rows(rows)
 				header = rows.pop(0)
 				column_labels = self._get_header_labels(header)
 				n_columns = len(column_labels)
