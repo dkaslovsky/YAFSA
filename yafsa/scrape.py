@@ -9,8 +9,6 @@ from urllib2 import urlopen, URLError
 
 # TODO: move away from urllib2 to requests
 
-# TODO: write to file each time through loop (in _parse_table and _parse_table_chunked) or remove write_to_file?
-
 
 class TableScraper(object):
 
