@@ -57,7 +57,7 @@ class TableScraper(object):
 		return full_file_name
 
 	@staticmethod
-	def _get_columns(row):
+	def _parse_columns(row):
 		"""
 		Parse columns from a single row
 		:param row:
@@ -65,7 +65,7 @@ class TableScraper(object):
 		"""
 		return row.find_all('td')
 
-	def _get_header_labels(self, header_row):
+	def _get_column_labels(self, header_row):
 		"""
 		Parse column labels from header
 		:param header_row:
@@ -76,8 +76,8 @@ class TableScraper(object):
 			header_soup = BeautifulSoup(str(header_row).replace('</span>', '</th>'), 'html.parser')
 		else:
 			header_soup = header_row
-		header_labels = [h.text.strip() for h in header_soup.find_all('th')]
-		return header_labels
+		column_labels = [h.text.strip() for h in header_soup.find_all('th')]
+		return column_labels
 
 	def _prepare_rows(self, rows):
 		"""
@@ -94,10 +94,10 @@ class TableScraper(object):
 		"""
 		Build list of dict records
 		:param rows:
-		:param labels: header labels to be used as keys
+		:param labels: column labels to be used as keys
 		:return:
 		"""
-		return [{label: td.text.strip() for label, td in zip(labels, self._get_columns(row))} for row in rows]
+		return [{label: td.text.strip() for label, td in zip(labels, self._parse_columns(row))} for row in rows]
 
 	def _parse_table(self, urlhandle):
 		"""
@@ -111,7 +111,7 @@ class TableScraper(object):
 		rows = table.find_all('tr')
 		rows = self._prepare_rows(rows)
 		header = rows.pop(0)
-		column_labels = self._get_header_labels(header)
+		column_labels = self._get_column_labels(header)
 		records = self._parse_rows(rows, column_labels)
 		return records
 
@@ -146,7 +146,7 @@ class TableScraper(object):
 			if column_labels is None:
 				rows = self._prepare_rows(rows)
 				header = rows.pop(0)
-				column_labels = self._get_header_labels(header)
+				column_labels = self._get_column_labels(header)
 				n_columns = len(column_labels)
 
 			# if previous chunk's last row extends into current chunk,
