@@ -1,14 +1,14 @@
 """ Driver script for analyzing rankings """
 
+
+### THIS IS VERY MUCH WORK IN PROGRESS ###
+
 import os
 import pandas as pd
 
 from functools import partial
 from yafsa.clean import clean_data
 from yafsa.score import Scorer, dcg
-
-
-#### NOTE: WORK IN PROGRESS ###
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -28,7 +28,7 @@ scorer = Scorer(_dcg, normalize=True)
 
 if __name__ == '__main__':
 
-	position_dfs = {}
+	scores_by_position = {}
 
 	for position in POSITIONS:
 
@@ -54,6 +54,21 @@ if __name__ == '__main__':
 			# scoring
 			scorer = scorer.fit(stats)
 			scores = scorer.score(ranks)
-			dfs.append(scores)
+			dfs.append(scores.rename('Week %i' % week))
 
-		position_dfs[position] = pd.concat(dfs, axis=1)
+		scores_by_position[position] = pd.concat(dfs, axis=1)
+
+	all_scores = pd.Panel(scores_by_position)
+
+	import matplotlib
+	matplotlib.use('tkagg')
+	import matplotlib.pyplot as plt
+	plt.ion()
+
+	fig, ax = plt.subplots(nrows=1, ncols=all_scores.shape[0], sharex=True, sharey=True)
+	for i, (position, scores) in enumerate(all_scores.iteritems()):
+		ax[i].imshow(scores, aspect='auto', interpolation='nearest')
+		ax[i].set_title(position)
+		ax[i].set_xticklabels(scores.columns.map(lambda x: x.split(' ')[1]))
+		ax[i].set_yticklabels(scores.index)
+		fig.subplots_adjust(hspace=0)
