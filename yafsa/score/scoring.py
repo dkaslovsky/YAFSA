@@ -1,9 +1,9 @@
-""" Meta wrapper around metrics for scoring """
+""" Wrapper around metrics for scoring """
 
 import pandas as pd
 
 
-class Ranker(object):
+class Scorer(object):
 	"""
 	Evaluate rankings against ground truth values (points)
 	"""

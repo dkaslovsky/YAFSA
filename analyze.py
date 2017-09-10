@@ -5,7 +5,7 @@ import pandas as pd
 
 from functools import partial
 from yafsa.clean import clean_data
-from yafsa.rank import Ranker, dcg
+from yafsa.score import Scorer, dcg
 
 
 #### NOTE: WORK IN PROGRESS ###
@@ -23,7 +23,7 @@ SOURCES = range(1, 5)
 
 # define ranking metric and ranker
 _dcg = partial(dcg, k=30, numerator='rel')
-ranker = Ranker(_dcg, normalize=True)
+scorer = Scorer(_dcg, normalize=True)
 
 
 if __name__ == '__main__':
@@ -51,8 +51,9 @@ if __name__ == '__main__':
 				ranks_list.append(ranks)
 			ranks = pd.concat(ranks_list, axis=1)
 
-			ranker = ranker.fit(stats)
-			scores = ranker.score(ranks)
+			# scoring
+			scorer = scorer.fit(stats)
+			scores = scorer.score(ranks)
 			dfs.append(scores)
 
 		position_dfs[position] = pd.concat(dfs, axis=1)

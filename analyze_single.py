@@ -5,7 +5,7 @@ import pandas as pd
 
 from functools import partial
 from yafsa.clean import clean_data
-from yafsa.rank import Ranker, dcg
+from yafsa.score import Scorer, dcg
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -25,6 +25,10 @@ STATS_FILE = '%s_week=%s_pos=%s.json' \
 RANK_FILE = '%s_week=%s_position=%s_source=%s.json' \
             % (FILE_PARAMS['year'], FILE_PARAMS['week'], FILE_PARAMS['pos'], FILE_PARAMS['source'])
 
+# define ranking metric and ranker
+_dcg = partial(dcg, k=30, numerator='rel')
+scorer = Scorer(_dcg, normalize=True)
+
 
 if __name__ == '__main__':
 
@@ -35,10 +39,8 @@ if __name__ == '__main__':
 	ranks = (pd.read_json(os.path.join(BASE_DIR, RANK_PATH, RANK_FILE))
 			   .pipe(clean_data, player_col='Player (matchup)', index_name='Player', drop_cols='Rank', fill=''))
 
-	_dcg = partial(dcg, k=30, numerator='rel')
+	# scoring
+	scorer = scorer.fit(stats)
+	scores = scorer.score(ranks)
 
-	ranker = Ranker(_dcg, normalize=True)
-	ranker = ranker.fit(stats)
-
-	scores = ranker.score(ranks)
 	print scores
