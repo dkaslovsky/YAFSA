@@ -8,7 +8,7 @@ import pandas as pd
 
 from functools import partial
 from yafsa.clean import clean_data
-from yafsa.score import Scorer, dcg
+from yafsa.score import DCGScorer
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -21,9 +21,7 @@ POSITIONS = ['QB', 'RB', 'WR', 'TE']
 WEEKS = range(1, 18)
 SOURCES = range(1, 5)
 
-# define ranking metric and ranker
-_dcg = partial(dcg, k=30, numerator='rel')
-scorer = Scorer(_dcg, normalize=True)
+scorer = DCGScorer(k=30, numerator='rel', normalize=True)
 
 
 if __name__ == '__main__':
@@ -60,15 +58,20 @@ if __name__ == '__main__':
 
 	all_scores = pd.Panel(scores_by_position)
 
+	# TODO: MAKE SURE TO CHECK THE INDEX OF EACH PANEL (all_scores['QB'].index -> does it contain only QBs?)
+
 	import matplotlib
 	matplotlib.use('tkagg')
 	import matplotlib.pyplot as plt
 	plt.ion()
 
-	fig, ax = plt.subplots(nrows=1, ncols=all_scores.shape[0], sharex=True, sharey=True)
+	fig, ax = plt.subplots(nrows=1, ncols=all_scores.shape[0])
 	for i, (position, scores) in enumerate(all_scores.iteritems()):
 		ax[i].imshow(scores, aspect='auto', interpolation='nearest')
 		ax[i].set_title(position)
+		ax[i].set_xticks(range(scores.shape[1]))
 		ax[i].set_xticklabels(scores.columns.map(lambda x: x.split(' ')[1]))
-		ax[i].set_yticklabels(scores.index)
+		ax[i].set_yticks(range(scores.shape[0]) if i==0 else [])
+		ax[i].set_yticklabels(scores.index, visible=i==0)
 		fig.subplots_adjust(hspace=0)
+		fig.tight_layout()
