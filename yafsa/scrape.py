@@ -12,6 +12,8 @@ from urllib2 import urlopen, URLError
 
 class TableScraper(object):
 
+	""" Class for scraping tables from HTML using BeautifulSoup """
+
 	def __init__(self, header_rows_to_skip=0, chunk_size=None, replace_span_tag=True):
 		"""
 		:param header_rows_to_skip: number of leading rows of scraped table to skip
