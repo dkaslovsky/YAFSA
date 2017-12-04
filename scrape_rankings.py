@@ -2,7 +2,7 @@
 
 import os
 import time
-from yafsa.scrape import TableScraper
+from yafsa.scrape import TableScraper, write_to_file
 
 
 # URL specification
@@ -51,6 +51,6 @@ if __name__ == '__main__':
 
 				# write file
 				file_name = '_'.join([YEAR, wk, pos, src])
-				full_file_name = ts.write_to_file(data, OUTDIR, file_name)
+				full_file_name = write_to_file(data, OUTDIR, file_name)
 				file_count += 1
 				print 'Wrote file %i: %s' % (file_count, full_file_name)
