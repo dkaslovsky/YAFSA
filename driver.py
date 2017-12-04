@@ -59,17 +59,18 @@ def get_ranks(year, week, position, sources):
 
 if __name__ == '__main__':
 
-    position = POSITIONS[2]  # WRs
-    week_to_score = 1
+    position = POSITIONS[2]  # just score WR rankings for now
+    week_to_score = 1        # just score week 1 for now
 
+    # get stats and ranks
     stats_by_week = pd.concat([get_stats(YEAR, week, position) for week in WEEKS], axis=1)
+    ranks = get_ranks(YEAR, week_to_score, position, SOURCES)
 
     # fit scorers
     dcg_scorer = dcg_scorer.fit(stats_by_week['Week %i' % week_to_score])
     diff_scorer = diff_scorer.fit(stats_by_week)
 
-    # score the rankings
-    ranks = get_ranks(YEAR, week_to_score, position, SOURCES)
+    # scoring
     dcg_scores = dcg_scorer.score(ranks)
     diff_scores = diff_scorer.score(ranks, stats_by_week['Week %i' % week_to_score])
 
