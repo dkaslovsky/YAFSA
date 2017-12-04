@@ -35,8 +35,8 @@ def get_stats(year, week, position):
     stats_file = '%s_week=%s_pos=%s.json' % (YEAR, week, position)
     stats = (pd.read_json(os.path.join(BASE_DIR, STATS_PATH, stats_file))
                .pipe(clean_data, player_col='PLAYER', index_name='Player', select_cols='FPTS'))
-    stats = stats['FPTS'].rename('Week %i' % week)
-    return stats
+    return stats['FPTS'].rename('Week %i' % week)
+
 
 def get_ranks(year, week, position, sources):
     """
@@ -57,6 +57,15 @@ def get_ranks(year, week, position, sources):
     return pd.concat(ranks_list, axis=1)
 
 
+def scores_to_ranks(series):
+    """
+    Order rank a series of scores
+    :param series:
+    :return:
+    """
+    return series.shape[0] - series.sort_values(ascending=False).argsort()
+
+
 if __name__ == '__main__':
 
     position = POSITIONS[2]  # just score WR rankings for now
@@ -74,5 +83,9 @@ if __name__ == '__main__':
     dcg_scores = dcg_scorer.score(ranks)
     diff_scores = diff_scorer.score(ranks, stats_by_week['Week %i' % week_to_score])
 
-    print dcg_scores
-    print diff_scores
+    order_rankings = pd.concat([
+        scores_to_ranks(dcg_scores).rename('DCG'),
+        scores_to_ranks(diff_scores).rename('Diff')
+    ], axis=1)
+    order_rankings['Composite'] = order_rankings.apply(sum, axis=1)
+    print order_rankings.sort_values('Composite')
