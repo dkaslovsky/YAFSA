@@ -6,10 +6,17 @@ import pandas as pd
 
 class BaseScorer(object):
 
-    """ DESCRIPTION HERE """
+    """ Base class for scoring """
 
     @staticmethod
     def check_input(input_data, valid_types, max_columns=None):
+        """
+        Validate input
+        :param input_data:
+        :param valid_types: type or tuple of types to check for
+        :param max_columns: maximum number of columns for tabular input_data
+        :return:
+        """
         valid_types = valid_types if isinstance(valid_types, tuple) else tuple([valid_types])
         if not isinstance(input_data, valid_types):
             raise TypeError('Invalid input type')
@@ -18,6 +25,12 @@ class BaseScorer(object):
                 raise ValueError('Input must have at most %i columns' % max_columns)
 
     def score(self, ranks, points=None):
+        """
+        Score projected ranks based on class metric
+        :param ranks: DataFrame or Series of ranks for a position indexed by "expert ranker"
+        :param points: Series of points scored for a position
+        :return:
+        """
         self.check_input(ranks, (pd.Series, pd.DataFrame))
         if isinstance(ranks, pd.Series):
             return ranks.to_frame().apply(self.metric, points=points)
@@ -37,12 +50,14 @@ class BaseScorer(object):
 
 class DCGScorer(BaseScorer):
 
+    """ Discounted cumulative gain (see https://en.wikipedia.org/wiki/Discounted_cumulative_gain) """
+
     def __init__(self, k=None, numerator='rel', normalize=True):
         """
 
-        :param k:
-        :param numerator:
-        :param normalize:
+        :param k: score only the first k rankings
+        :param numerator: use relevance scores ('rel') or 2^relevance_scores - 1 ('exp') in numerator of dcg calculation
+        :param normalize: boolean indicating whether to normalize by maximum possible dcg
         """
         self.k = k if k else np.inf
         self.normalize = normalize
@@ -80,11 +95,26 @@ class DCGScorer(BaseScorer):
         return self
 
     def metric(self, ranks, points=None):
+        """
+
+        :param ranks: Series of projected rankings indexed by player
+        :param points: not used, included to conform to BaseScorer API
+        :return:
+        """
         return self._metric(ranks, self.normalize)
 
     def _metric(self, ranks, normalize):
+        """
+        Computes DCG
+        :param ranks: Series of projected rankings indexed by player
+        :param normalize: boolean
+        :return:
+        """
+        # sort points by rank
         points_by_rank = self.sort_points_by_rank(ranks, self.points_)
+        # ensure k does not exceed length of points_by_rank
         k = min(self.k, points_by_rank.shape[0])
+        # DCG calculation
         numerator = self.numerator_func(points_by_rank.iloc[:k])
         denominator = np.log2(np.arange(2, k+2))
         score = sum(numerator / denominator)
@@ -103,7 +133,14 @@ class DCGScorer(BaseScorer):
 
 class DifferenceScorer(BaseScorer):
 
+    """ Score based on difference from mean points for a given rank """
+
     def __init__(self, k=None, standardize=False):
+        """
+
+        :param k: score only the first k rankings
+        :param standardize: return standardized z-scores
+        """
         self.k = k if k else np.inf
         self.standardize = standardize
         # populated by fit
@@ -112,14 +149,20 @@ class DifferenceScorer(BaseScorer):
         self.points_std_by_rank_ = None
 
     def fit(self, points_by_week):
+        """
+        Compute statistics from historical points
+        :param points_by_week: DataFrame of weekly points
+        :return:
+        """
         self.check_input(points_by_week, pd.DataFrame)
         # sort each column's (week's) points
         sorted_points = -np.sort(-points_by_week.values, axis=0)
         sorted_points = sorted_points[~np.all(np.isnan(sorted_points), axis=1)]
         self.n_fitted_points_ = sorted_points.shape[0]
-        # compute mean and std
+        # compute mean for each rank
         self.points_mean_by_rank_ = np.nan_to_num(np.nanmean(sorted_points, axis=1))
         if self.standardize:
+            # standard deviation for each rank
             self.points_std_by_rank_ = np.nan_to_num(np.nanstd(sorted_points, axis=1))
             # replace zeros with the median std to avoid division by zero
             zero_fill_val = np.median(self.points_std_by_rank_[self.points_std_by_rank_ > 0])
@@ -127,6 +170,12 @@ class DifferenceScorer(BaseScorer):
         return self
 
     def metric(self, ranks, points):
+        """
+        Compute score as the average of the difference of the underperforming ranks
+        :param ranks: Series of projected rankings indexed by player
+        :param points: Series of actual points scored indexed by player
+        :return:
+        """
         points_by_rank = self.sort_points_by_rank(ranks, points)
         max_idx = min(points_by_rank.shape[0], self.n_fitted_points_, self.k)
         # compute difference between points scored by ith ranked player and the
