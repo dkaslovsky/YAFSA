@@ -10,7 +10,10 @@ def normalize_player_names(namestr):
 	:param namestr: string
 	:return:
 	"""
-	return ' '.join(namestr.strip().split(' ')[:2]).strip(',.')
+	try:
+		return ' '.join(namestr.strip().split(' ')[:2]).strip(',.')
+	except IndexError:
+		return ' '
 
 
 def strip_date_from_name(namestr):
@@ -19,7 +22,10 @@ def strip_date_from_name(namestr):
 	:param namestr: string
 	:return:
 	"""
-	return re.split('\d+/\d+', namestr)[0]
+	try:
+		return re.split('\d+/\d+', namestr)[0]
+	except IndexError:
+		return ' '
 
 
 def set_player_index(df, player_col, index_name):
