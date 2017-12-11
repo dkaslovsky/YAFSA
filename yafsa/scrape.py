@@ -41,10 +41,10 @@ class TableScraper(object):
                 records = table_parser(urlhandle)
         except (URLError, ValueError):
             print 'Could not open url: %s' % url
-            records = []
+            return []
         except IndexError as e:
             print e.message
-            records = []
+            return []
         return records
 
     @staticmethod
