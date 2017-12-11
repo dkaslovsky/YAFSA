@@ -4,58 +4,6 @@ import numpy as np
 import re
 
 
-def normalize_player_names(namestr):
-	"""
-	Strips off all extra information from player names (e.g., opponent, date) and standardizes names (removes Jr., etc)
-	:param namestr: string
-	:return:
-	"""
-	try:
-		return ' '.join(namestr.strip().split(' ')[:2]).strip(',.')
-	except IndexError:
-		return ' '
-
-
-def strip_date_from_name(namestr):
-	"""
-	Removes date information (of the form mm/dd) from the end of a string name
-	:param namestr: string
-	:return:
-	"""
-	try:
-		return re.split('\d+/\d+', namestr)[0]
-	except IndexError:
-		return ' '
-
-
-def set_player_index(df, player_col, index_name):
-	"""
-	Sets player_col as the index, after normalization, with name index_name
-	:param df: dataframe
-	:param player_col: column containing player names
-	:param index_name: name to use for index
-	:return:
-	"""
-	df[player_col] = df[player_col].apply(normalize_player_names)
-
-	df = (df.set_index(player_col)
-			.rename_axis(index_name if index_name else player_col, axis=0))
-	return df
-
-
-def set_column_names(df, deduplicate=True):
-	"""
-	Removes trailing dates from all column names
-	:param df: dataframe
-	:param deduplicate: bool to indicate whether to deduplicate columns (keeping last) after removing trailing dates
-	:return:
-	"""
-	df = df.rename(columns={col: strip_date_from_name(col) for col in df.columns})
-	if deduplicate:
-		df = df.loc[:, ~df.columns.duplicated(keep='last')]
-	return df
-
-
 def clean_data(df, player_col, index_name=None, select_cols=None, drop_cols=None, fill=None):
 	"""
 	Convenience function for cleaning data: subsetting, filling missing values, and setting index/columns
@@ -87,3 +35,55 @@ def clean_data(df, player_col, index_name=None, select_cols=None, drop_cols=None
 			.pipe(set_column_names, deduplicate=True))
 
 	return df
+
+
+def set_player_index(df, player_col, index_name):
+	"""
+	Sets player_col as the index, after normalization, with name index_name
+	:param df: dataframe
+	:param player_col: column containing player names
+	:param index_name: name to use for index
+	:return:
+	"""
+	df[player_col] = df[player_col].apply(_normalize_player_names)
+
+	df = (df.set_index(player_col)
+			.rename_axis(index_name if index_name else player_col, axis=0))
+	return df
+
+
+def set_column_names(df, deduplicate=True):
+	"""
+	Removes trailing dates from all column names
+	:param df: dataframe
+	:param deduplicate: bool to indicate whether to deduplicate columns (keeping last) after removing trailing dates
+	:return:
+	"""
+	df = df.rename(columns={col: _strip_date_from_name(col) for col in df.columns})
+	if deduplicate:
+		df = df.loc[:, ~df.columns.duplicated(keep='last')]
+	return df
+
+
+def _normalize_player_names(namestr):
+	"""
+	Strips off all extra information from player names (e.g., opponent, date) and standardizes names (removes Jr., etc)
+	:param namestr: string
+	:return:
+	"""
+	try:
+		return ' '.join(namestr.strip().split(' ')[:2]).strip(',.')
+	except IndexError:
+		return ' '
+
+
+def _strip_date_from_name(namestr):
+	"""
+	Removes date information (of the form mm/dd) from the end of a string name
+	:param namestr: string
+	:return:
+	"""
+	try:
+		return re.split('\d+/\d+', namestr)[0]
+	except IndexError:
+		return ' '
