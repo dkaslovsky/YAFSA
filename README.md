@@ -38,6 +38,6 @@ We see that (for the 2016 season) Field Yates of ESPN has the best overall compo
 <br/>
 
 **To Do**
-* Persist historical rankings and points in a database rather than CSV files, update readers to query DB
+* Persist historical rankings and points in a database rather than CSV/JSON files, update readers to query DB
 * Separate the TableScraper class into its own project since it is sufficiently generic
 * Unit tests are needed
